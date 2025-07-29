@@ -296,12 +296,12 @@
 }
 
 .file-upload-area:hover {
-    border-color: var(--primary-color);
+    border-color: var(--fesfut-blue);
     background: var(--primary-light);
 }
 
 .file-upload-area.dragover {
-    border-color: var(--primary-color);
+    border-color: var(--fesfut-blue);
     background: var(--primary-light);
     transform: scale(1.02);
 }
@@ -363,14 +363,14 @@
 
 .checkbox-container:hover {
     background: var(--primary-light);
-    border-color: var(--primary-color);
+    border-color: var(--fesfut-blue);
 }
 
 .checkbox-input {
     width: 1.25rem;
     height: 1.25rem;
     margin-right: 0.75rem;
-    accent-color: var(--primary-color);
+    accent-color: var(--fesfut-blue);
 }
 
 .checkbox-label {
@@ -407,9 +407,10 @@
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-    color: white;
+    background: linear-gradient(135deg, var(--fesfut-blue), var(--primary-hover));
+    color: var(--fesfut-white);
     box-shadow: var(--shadow);
+    border: 2px solid var(--fesfut-white);
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -533,7 +534,7 @@
 .form-input:focus + .form-label,
 .form-select:focus + .form-label,
 .form-textarea:focus + .form-label {
-    color: var(--primary-color);
+    color: var(--fesfut-blue);
 }
 
 /* Mejoras de accesibilidad */
@@ -541,7 +542,7 @@
 .form-select:focus-visible,
 .form-textarea:focus-visible,
 .btn:focus-visible {
-    outline: 2px solid var(--primary-color);
+    outline: 2px solid var(--fesfut-blue);
     outline-offset: 2px;
 }
 </style>
@@ -1315,7 +1316,7 @@ function showLocationFallback() {
                 
                 <div style="text-align: center;">
                     <button onclick="closeLocationFallback()" style="
-                        background: linear-gradient(135deg, #4f46e5, #4338ca);
+                        background: linear-gradient(135deg, #003f7f, #4a90e2);
                         color: white;
                         border: none;
                         padding: 0.75rem 2rem;
@@ -1519,7 +1520,7 @@ function searchLocation() {
                         Cancelar
                     </button>
                     <button onclick="performSearch()" style="
-                        background: linear-gradient(135deg, #4f46e5, #4338ca);
+                        background: linear-gradient(135deg, #003f7f, #4a90e2);
                         color: white;
                         border: none;
                         padding: 0.75rem 1.5rem;
@@ -1595,10 +1596,10 @@ function displaySearchResults(results) {
                 cursor: pointer;
                 transition: all 0.2s ease;
                 background: white;
-            " onmouseover="this.style.background='#f3f4f6'; this.style.borderColor='#4f46e5';" 
+            " onmouseover="this.style.background='#f3f4f6'; this.style.borderColor='#003f7f';" 
                onmouseout="this.style.background='white'; this.style.borderColor='#e5e7eb';">
                 <div style="font-weight: 600; color: #374151; font-size: 0.875rem; margin-bottom: 0.25rem;">
-                    <i class="fas fa-map-marker-alt" style="color: #4f46e5; margin-right: 0.5rem;"></i>
+                    <i class="fas fa-map-marker-alt" style="color: #003f7f; margin-right: 0.5rem;"></i>
                     ${result.display_name.split(',')[0]}
                 </div>
                 <div style="color: #6b7280; font-size: 0.75rem;">

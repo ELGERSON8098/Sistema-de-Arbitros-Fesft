@@ -709,21 +709,24 @@
 
             <!-- Mapa Interactivo -->
             <div class="form-group">
-                <div class="map-container">
+                <div class="map-container" wire:ignore>
                     <div id="map"></div>
                 </div>
                 
                 <!-- Botones de acción del mapa -->
                 <div class="map-controls">
-                    <button type="button" onclick="getCurrentLocation()" class="map-btn">
+                    <button type="button" onclick="getCurrentLocation()" class="map-btn" 
+                            title="Obtener mi ubicación actual (requiere HTTPS o localhost)">
                         <i class="fas fa-crosshairs"></i>
                         Mi Ubicación
                     </button>
-                    <button type="button" onclick="searchLocation()" class="map-btn">
+                    <button type="button" onclick="searchLocation()" class="map-btn"
+                            title="Buscar una dirección específica">
                         <i class="fas fa-search"></i>
                         Buscar Dirección
                     </button>
-                    <button type="button" onclick="clearLocation()" class="map-btn">
+                    <button type="button" onclick="clearLocation()" class="map-btn"
+                            title="Limpiar la ubicación seleccionada">
                         <i class="fas fa-trash"></i>
                         Limpiar
                     </button>
@@ -861,25 +864,74 @@
 let map;
 let marker;
 let isMapInitialized = false;
+let mapContainer;
 
 // Inicializar el mapa cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(initializeMap, 500);
 });
 
-// También inicializar cuando Livewire actualice el DOM
-document.addEventListener('livewire:navigated', function() {
-    setTimeout(initializeMap, 500);
-});
-
-// Reinicializar después de actualizaciones de Livewire
-window.addEventListener('livewire:navigated', () => {
-    isMapInitialized = false;
-    setTimeout(initializeMap, 500);
+// Manejar eventos de Livewire para preservar el mapa
+document.addEventListener('livewire:init', () => {
+    // Preservar el mapa durante actualizaciones de Livewire
+    Livewire.hook('morph.updating', ({ el, component }) => {
+        // Si el elemento que se está actualizando contiene el mapa, preservarlo
+        const mapElement = document.getElementById('map');
+        if (mapElement && el.contains && el.contains(mapElement)) {
+            // Marcar que el mapa debe preservarse
+            mapElement.setAttribute('data-preserve-map', 'true');
+        }
+    });
+    
+    Livewire.hook('morph.updated', ({ el, component }) => {
+        // Verificar si necesitamos reinicializar el mapa
+        const mapElement = document.getElementById('map');
+        if (mapElement) {
+            if (mapElement.hasAttribute('data-preserve-map')) {
+                // Remover el atributo y redimensionar el mapa existente
+                mapElement.removeAttribute('data-preserve-map');
+                if (map) {
+                    setTimeout(() => {
+                        map.invalidateSize();
+                    }, 100);
+                }
+            } else if (!map || !isMapInitialized) {
+                // Solo reinicializar si realmente es necesario
+                isMapInitialized = false;
+                setTimeout(initializeMap, 100);
+            }
+        }
+    });
+    
+    // Manejar navegación de Livewire
+    Livewire.hook('navigate', () => {
+        if (map) {
+            map.remove();
+            map = null;
+            marker = null;
+            isMapInitialized = false;
+        }
+    });
 });
 
 function initializeMap() {
-    if (isMapInitialized || !document.getElementById('map')) return;
+    const mapElement = document.getElementById('map');
+    
+    if (isMapInitialized && map && mapElement) {
+        // Si el mapa ya está inicializado y existe, solo redimensionar
+        setTimeout(() => {
+            if (map) {
+                map.invalidateSize();
+            }
+        }, 100);
+        return;
+    }
+    
+    if (!mapElement) {
+        console.log('Elemento del mapa no encontrado, reintentando...');
+        setTimeout(initializeMap, 500);
+        return;
+    }
     
     try {
         // Limpiar mapa existente si existe
@@ -907,13 +959,24 @@ function initializeMap() {
         const currentLat = parseFloat(latInput.value) || defaultLat;
         const currentLng = parseFloat(lngInput.value) || defaultLng;
         
-        // Crear el mapa
-        map = L.map('map').setView([currentLat, currentLng], 10);
+        // Crear el mapa con configuración mejorada
+        map = L.map('map', {
+            center: [currentLat, currentLng],
+            zoom: 10,
+            zoomControl: true,
+            scrollWheelZoom: true,
+            doubleClickZoom: true,
+            boxZoom: true,
+            keyboard: true,
+            dragging: true,
+            touchZoom: true
+        });
         
         // Agregar capa de OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors',
-            maxZoom: 19
+            maxZoom: 19,
+            minZoom: 3
         }).addTo(map);
         
         // Si hay coordenadas existentes, agregar marcador
@@ -926,6 +989,8 @@ function initializeMap() {
             const lat = e.latlng.lat;
             const lng = e.latlng.lng;
             
+            console.log(`Clic en mapa: ${lat}, ${lng}`);
+            
             // Agregar/mover marcador
             addMarker(lat, lng);
             
@@ -933,14 +998,18 @@ function initializeMap() {
             reverseGeocode(lat, lng);
         });
         
-        isMapInitialized = true;
+        // Evento cuando el mapa está listo
+        map.whenReady(function() {
+            console.log('Mapa listo para usar');
+            setTimeout(() => {
+                if (map) {
+                    map.invalidateSize();
+                }
+            }, 100);
+        });
         
-        // Redimensionar el mapa después de un momento
-        setTimeout(() => {
-            if (map) {
-                map.invalidateSize();
-            }
-        }, 250);
+        isMapInitialized = true;
+        mapContainer = mapElement;
         
         console.log('Mapa inicializado correctamente');
         
@@ -953,29 +1022,53 @@ function initializeMap() {
 }
 
 function addMarker(lat, lng, address = '') {
-    // Remover marcador existente
-    if (marker) {
-        map.removeLayer(marker);
+    if (!map) {
+        console.error('Mapa no inicializado');
+        return;
     }
     
-    // Agregar nuevo marcador
-    marker = L.marker([lat, lng], {
-        draggable: true
-    }).addTo(map);
-    
-    // Evento cuando se arrastra el marcador
-    marker.on('dragend', function(e) {
-        const newLat = e.target.getLatLng().lat;
-        const newLng = e.target.getLatLng().lng;
-        reverseGeocode(newLat, newLng);
-    });
-    
-    // Actualizar campos
-    updateLocationFields(lat, lng, address);
-    
-    // Popup con información
-    if (address) {
-        marker.bindPopup(`<b>Ubicación seleccionada:</b><br>${address}`).openPopup();
+    try {
+        // Remover marcador existente
+        if (marker) {
+            map.removeLayer(marker);
+            marker = null;
+        }
+        
+        // Agregar nuevo marcador
+        marker = L.marker([lat, lng], {
+            draggable: true,
+            title: 'Ubicación del árbitro - Arrastrar para ajustar'
+        }).addTo(map);
+        
+        // Evento cuando se arrastra el marcador
+        marker.on('dragend', function(e) {
+            const newLat = e.target.getLatLng().lat;
+            const newLng = e.target.getLatLng().lng;
+            console.log(`Marcador arrastrado a: ${newLat}, ${newLng}`);
+            reverseGeocode(newLat, newLng);
+        });
+        
+        // Actualizar campos
+        updateLocationFields(lat, lng, address);
+        
+        // Popup con información
+        const popupContent = address ? 
+            `<div style="text-align: center;">
+                <b>📍 Ubicación seleccionada</b><br>
+                <span style="color: #666;">${address}</span><br>
+                <small style="color: #999;">Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}</small>
+            </div>` :
+            `<div style="text-align: center;">
+                <b>📍 Ubicación seleccionada</b><br>
+                <small style="color: #999;">Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}</small>
+            </div>`;
+            
+        marker.bindPopup(popupContent).openPopup();
+        
+        console.log(`Marcador agregado en: ${lat}, ${lng}`);
+        
+    } catch (error) {
+        console.error('Error agregando marcador:', error);
     }
 }
 
@@ -990,29 +1083,27 @@ function updateLocationFields(lat, lng, address = '') {
             return;
         }
         
-        // Actualizar campos del formulario
-        latInput.value = lat.toFixed(8);
-        lngInput.value = lng.toFixed(8);
+        // Actualizar campos del formulario sin disparar eventos
+        const latValue = lat.toFixed(8);
+        const lngValue = lng.toFixed(8);
+        
+        latInput.value = latValue;
+        lngInput.value = lngValue;
         
         if (address) {
             ubicacionInput.value = address;
         }
         
-        // Disparar eventos de Livewire para sincronizar
-        latInput.dispatchEvent(new Event('input', { bubbles: true }));
-        lngInput.dispatchEvent(new Event('input', { bubbles: true }));
-        if (address) {
-            ubicacionInput.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-        
-        // Actualizar el componente Livewire directamente
+        // Actualizar Livewire usando wire:model.defer para evitar re-renderizado inmediato
         if (window.Livewire && @this) {
-            @this.set('latitud', lat.toFixed(8));
-            @this.set('longitud', lng.toFixed(8));
+            @this.set('latitud', latValue);
+            @this.set('longitud', lngValue);
             if (address) {
                 @this.set('ubicacion', address);
             }
         }
+        
+        console.log(`Ubicación actualizada: ${latValue}, ${lngValue}, ${address}`);
         
     } catch (error) {
         console.error('Error actualizando campos de ubicación:', error);
@@ -1069,61 +1160,470 @@ function reverseGeocode(lat, lng) {
 }
 
 function getCurrentLocation() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            function(position) {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-                
-                // Centrar mapa en la ubicación actual
-                map.setView([lat, lng], 15);
-                
-                // Agregar marcador
-                addMarker(lat, lng);
-                
-                // Obtener dirección
-                reverseGeocode(lat, lng);
-            },
-            function(error) {
-                alert('Error obteniendo ubicación: ' + error.message);
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 60000
+    // Verificar si la geolocalización está disponible
+    if (!navigator.geolocation) {
+        showLocationError('La geolocalización no está soportada en este navegador.');
+        return;
+    }
+    
+    // Verificar si estamos en un contexto seguro
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        showLocationFallback();
+        return;
+    }
+    
+    // Mostrar indicador de carga
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Obteniendo ubicación...';
+    button.disabled = true;
+    
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            console.log(`Ubicación obtenida: ${lat}, ${lng}`);
+            
+            // Centrar mapa en la ubicación actual
+            map.setView([lat, lng], 15);
+            
+            // Agregar marcador
+            addMarker(lat, lng);
+            
+            // Obtener dirección
+            reverseGeocode(lat, lng);
+            
+            // Restaurar botón
+            button.innerHTML = originalText;
+            button.disabled = false;
+            
+            // Mostrar mensaje de éxito
+            showLocationSuccess('Ubicación obtenida correctamente');
+        },
+        function(error) {
+            console.error('Error de geolocalización:', error);
+            
+            // Restaurar botón
+            button.innerHTML = originalText;
+            button.disabled = false;
+            
+            // Manejar diferentes tipos de error
+            let errorMessage = '';
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage = 'Permiso de ubicación denegado. Por favor, habilite la ubicación en su navegador.';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage = 'Información de ubicación no disponible.';
+                    break;
+                case error.TIMEOUT:
+                    errorMessage = 'Tiempo de espera agotado para obtener la ubicación.';
+                    break;
+                default:
+                    if (error.message.includes('Only secure origins are allowed')) {
+                        showLocationFallback();
+                        return;
+                    }
+                    errorMessage = 'Error desconocido obteniendo ubicación: ' + error.message;
+                    break;
             }
-        );
-    } else {
-        alert('La geolocalización no está soportada en este navegador.');
+            
+            showLocationError(errorMessage);
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 300000 // 5 minutos
+        }
+    );
+}
+
+function showLocationFallback() {
+    const fallbackModal = `
+        <div id="locationFallbackModal" style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        ">
+            <div style="
+                background: white;
+                padding: 2rem;
+                border-radius: 12px;
+                max-width: 500px;
+                margin: 1rem;
+                box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+            ">
+                <div style="text-align: center; margin-bottom: 1.5rem;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #f59e0b; margin-bottom: 1rem;"></i>
+                    <h3 style="font-size: 1.25rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem;">
+                        Geolocalización no disponible
+                    </h3>
+                    <p style="color: #6b7280; font-size: 0.875rem;">
+                        La geolocalización automática no está disponible en este contexto. 
+                        Puede usar las siguientes alternativas:
+                    </p>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <h4 style="font-weight: 600; color: #374151; margin-bottom: 0.75rem;">
+                        <i class="fas fa-lightbulb" style="color: #10b981; margin-right: 0.5rem;"></i>
+                        Alternativas disponibles:
+                    </h4>
+                    <ul style="list-style: none; padding: 0; color: #6b7280; font-size: 0.875rem;">
+                        <li style="margin-bottom: 0.5rem;">
+                            <i class="fas fa-mouse-pointer" style="color: #4f46e5; margin-right: 0.5rem;"></i>
+                            Haga clic directamente en el mapa
+                        </li>
+                        <li style="margin-bottom: 0.5rem;">
+                            <i class="fas fa-search" style="color: #4f46e5; margin-right: 0.5rem;"></i>
+                            Use el botón "Buscar Dirección"
+                        </li>
+                        <li style="margin-bottom: 0.5rem;">
+                            <i class="fas fa-arrows-alt" style="color: #4f46e5; margin-right: 0.5rem;"></i>
+                            Arrastre el marcador para ajustar
+                        </li>
+                    </ul>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem; padding: 1rem; background: #f3f4f6; border-radius: 8px;">
+                    <h4 style="font-weight: 600; color: #374151; margin-bottom: 0.5rem; font-size: 0.875rem;">
+                        <i class="fas fa-info-circle" style="color: #3b82f6; margin-right: 0.5rem;"></i>
+                        ¿Por qué no funciona?
+                    </h4>
+                    <p style="color: #6b7280; font-size: 0.75rem; margin: 0;">
+                        Los navegadores requieren HTTPS o localhost para acceder a la ubicación por seguridad.
+                        Como está usando una IP local, esta función no está disponible.
+                    </p>
+                </div>
+                
+                <div style="text-align: center;">
+                    <button onclick="closeLocationFallback()" style="
+                        background: linear-gradient(135deg, #4f46e5, #4338ca);
+                        color: white;
+                        border: none;
+                        padding: 0.75rem 2rem;
+                        border-radius: 8px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        font-size: 0.875rem;
+                    ">
+                        <i class="fas fa-check" style="margin-right: 0.5rem;"></i>
+                        Entendido
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', fallbackModal);
+}
+
+function closeLocationFallback() {
+    const modal = document.getElementById('locationFallbackModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function showLocationError(message) {
+    // Crear notificación de error elegante
+    const errorNotification = `
+        <div id="locationError" style="
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            z-index: 9999;
+            max-width: 400px;
+            animation: slideInRight 0.3s ease-out;
+        ">
+            <div style="display: flex; align-items: center;">
+                <i class="fas fa-exclamation-circle" style="font-size: 1.25rem; margin-right: 0.75rem;"></i>
+                <div>
+                    <div style="font-weight: 600; margin-bottom: 0.25rem;">Error de Ubicación</div>
+                    <div style="font-size: 0.875rem; opacity: 0.9;">${message}</div>
+                </div>
+                <button onclick="closeLocationError()" style="
+                    background: none;
+                    border: none;
+                    color: white;
+                    font-size: 1.25rem;
+                    cursor: pointer;
+                    margin-left: 1rem;
+                    opacity: 0.7;
+                ">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <style>
+            @keyframes slideInRight {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+        </style>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', errorNotification);
+    
+    // Auto-cerrar después de 5 segundos
+    setTimeout(() => {
+        closeLocationError();
+    }, 5000);
+}
+
+function showLocationSuccess(message) {
+    // Crear notificación de éxito elegante
+    const successNotification = `
+        <div id="locationSuccess" style="
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            z-index: 9999;
+            max-width: 400px;
+            animation: slideInRight 0.3s ease-out;
+        ">
+            <div style="display: flex; align-items: center;">
+                <i class="fas fa-check-circle" style="font-size: 1.25rem; margin-right: 0.75rem;"></i>
+                <div>
+                    <div style="font-weight: 600; margin-bottom: 0.25rem;">¡Éxito!</div>
+                    <div style="font-size: 0.875rem; opacity: 0.9;">${message}</div>
+                </div>
+                <button onclick="closeLocationSuccess()" style="
+                    background: none;
+                    border: none;
+                    color: white;
+                    font-size: 1.25rem;
+                    cursor: pointer;
+                    margin-left: 1rem;
+                    opacity: 0.7;
+                ">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', successNotification);
+    
+    // Auto-cerrar después de 3 segundos
+    setTimeout(() => {
+        closeLocationSuccess();
+    }, 3000);
+}
+
+function closeLocationError() {
+    const error = document.getElementById('locationError');
+    if (error) {
+        error.remove();
+    }
+}
+
+function closeLocationSuccess() {
+    const success = document.getElementById('locationSuccess');
+    if (success) {
+        success.remove();
     }
 }
 
 function searchLocation() {
-    const query = prompt('Ingrese la dirección a buscar en El Salvador:');
-    if (!query) return;
+    // Crear modal de búsqueda elegante
+    const searchModal = `
+        <div id="searchLocationModal" style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        ">
+            <div style="
+                background: white;
+                padding: 2rem;
+                border-radius: 12px;
+                max-width: 500px;
+                width: 90%;
+                margin: 1rem;
+                box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+            ">
+                <div style="text-align: center; margin-bottom: 1.5rem;">
+                    <i class="fas fa-search-location" style="font-size: 3rem; color: #4f46e5; margin-bottom: 1rem;"></i>
+                    <h3 style="font-size: 1.25rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem;">
+                        Buscar Dirección
+                    </h3>
+                    <p style="color: #6b7280; font-size: 0.875rem;">
+                        Ingrese la dirección que desea buscar en El Salvador
+                    </p>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <input type="text" id="searchInput" placeholder="Ej: San Salvador, Centro Histórico" style="
+                        width: 100%;
+                        padding: 0.75rem 1rem;
+                        border: 2px solid #e5e7eb;
+                        border-radius: 8px;
+                        font-size: 0.875rem;
+                        box-sizing: border-box;
+                    " onkeypress="if(event.key==='Enter') performSearch()">
+                </div>
+                
+                <div id="searchResults" style="
+                    max-height: 200px;
+                    overflow-y: auto;
+                    margin-bottom: 1.5rem;
+                    display: none;
+                "></div>
+                
+                <div style="display: flex; gap: 1rem; justify-content: center;">
+                    <button onclick="closeSearchModal()" style="
+                        background: #f3f4f6;
+                        color: #374151;
+                        border: none;
+                        padding: 0.75rem 1.5rem;
+                        border-radius: 8px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        font-size: 0.875rem;
+                    ">
+                        <i class="fas fa-times" style="margin-right: 0.5rem;"></i>
+                        Cancelar
+                    </button>
+                    <button onclick="performSearch()" style="
+                        background: linear-gradient(135deg, #4f46e5, #4338ca);
+                        color: white;
+                        border: none;
+                        padding: 0.75rem 1.5rem;
+                        border-radius: 8px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        font-size: 0.875rem;
+                    ">
+                        <i class="fas fa-search" style="margin-right: 0.5rem;"></i>
+                        Buscar
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', searchModal);
+    
+    // Enfocar el input
+    setTimeout(() => {
+        document.getElementById('searchInput').focus();
+    }, 100);
+}
+
+function performSearch() {
+    const query = document.getElementById('searchInput').value.trim();
+    if (!query) {
+        showLocationError('Por favor, ingrese una dirección para buscar.');
+        return;
+    }
+    
+    const searchButton = event.target;
+    const originalText = searchButton.innerHTML;
+    searchButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando...';
+    searchButton.disabled = true;
     
     // Buscar usando Nominatim
-    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', El Salvador')}&limit=5`)
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', El Salvador')}&limit=5&addressdetails=1`)
         .then(response => response.json())
         .then(data => {
+            searchButton.innerHTML = originalText;
+            searchButton.disabled = false;
+            
             if (data.length > 0) {
-                const result = data[0];
-                const lat = parseFloat(result.lat);
-                const lng = parseFloat(result.lon);
-                
-                // Centrar mapa en el resultado
-                map.setView([lat, lng], 15);
-                
-                // Agregar marcador
-                addMarker(lat, lng, result.display_name);
+                displaySearchResults(data);
             } else {
-                alert('No se encontraron resultados para: ' + query);
+                showLocationError(`No se encontraron resultados para: "${query}"`);
             }
         })
         .catch(error => {
             console.error('Error en búsqueda:', error);
-            alert('Error al buscar la dirección.');
+            searchButton.innerHTML = originalText;
+            searchButton.disabled = false;
+            showLocationError('Error al buscar la dirección. Verifique su conexión a internet.');
         });
+}
+
+function displaySearchResults(results) {
+    const resultsContainer = document.getElementById('searchResults');
+    
+    let resultsHTML = '<h4 style="font-weight: 600; color: #374151; margin-bottom: 0.75rem; font-size: 0.875rem;">Resultados encontrados:</h4>';
+    
+    results.forEach((result, index) => {
+        const lat = parseFloat(result.lat);
+        const lng = parseFloat(result.lon);
+        
+        resultsHTML += `
+            <div onclick="selectSearchResult(${lat}, ${lng}, '${result.display_name.replace(/'/g, "\\'")}'); closeSearchModal();" style="
+                padding: 0.75rem;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                margin-bottom: 0.5rem;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                background: white;
+            " onmouseover="this.style.background='#f3f4f6'; this.style.borderColor='#4f46e5';" 
+               onmouseout="this.style.background='white'; this.style.borderColor='#e5e7eb';">
+                <div style="font-weight: 600; color: #374151; font-size: 0.875rem; margin-bottom: 0.25rem;">
+                    <i class="fas fa-map-marker-alt" style="color: #4f46e5; margin-right: 0.5rem;"></i>
+                    ${result.display_name.split(',')[0]}
+                </div>
+                <div style="color: #6b7280; font-size: 0.75rem;">
+                    ${result.display_name}
+                </div>
+                <div style="color: #9ca3af; font-size: 0.75rem; margin-top: 0.25rem;">
+                    Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}
+                </div>
+            </div>
+        `;
+    });
+    
+    resultsContainer.innerHTML = resultsHTML;
+    resultsContainer.style.display = 'block';
+}
+
+function selectSearchResult(lat, lng, displayName) {
+    console.log(`Resultado seleccionado: ${lat}, ${lng}, ${displayName}`);
+    
+    // Centrar mapa en el resultado
+    map.setView([lat, lng], 15);
+    
+    // Agregar marcador
+    addMarker(lat, lng, displayName);
+    
+    // Mostrar mensaje de éxito
+    showLocationSuccess('Ubicación encontrada y seleccionada correctamente');
+}
+
+function closeSearchModal() {
+    const modal = document.getElementById('searchLocationModal');
+    if (modal) {
+        modal.remove();
+    }
 }
 
 function clearLocation() {

@@ -11,15 +11,21 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-/* Variables CSS para consistencia */
+/* Variables CSS para consistencia - Colores oficiales FESFUT */
 :root {
-    --primary-color: #4f46e5;
-    --primary-hover: #4338ca;
-    --primary-light: #eef2ff;
-    --secondary-color: #64748b;
+    /* Colores oficiales de la Federación Salvadoreña de Fútbol (FESFUT) */
+    --primary-color: #003f7f; /* Azul FESFUT principal */
+    --primary-hover: #002a5c; /* Azul FESFUT oscuro */
+    --primary-light: #e6f2ff; /* Azul FESFUT claro */
+    --secondary-color: #0066cc; /* Azul FESFUT secundario */
+    --accent-color: #ffffff; /* Blanco FESFUT */
     --success-color: #10b981;
     --warning-color: #f59e0b;
     --error-color: #ef4444;
+    --fesfut-blue: #003f7f; /* Azul oficial FESFUT */
+    --fesfut-light-blue: #4a90e2; /* Azul claro FESFUT */
+    --fesfut-white: #ffffff; /* Blanco oficial */
+    --fesfut-silver: #f8f9fa; /* Plata/gris muy claro */
     --gray-50: #f8fafc;
     --gray-100: #f1f5f9;
     --gray-200: #e2e8f0;
@@ -45,21 +51,22 @@
 
 /* Contenedor principal mejorado */
 .form-container {
-    background: linear-gradient(135deg, var(--gray-50) 0%, #ffffff 100%);
+    background: linear-gradient(135deg, var(--fesfut-silver) 0%, var(--fesfut-white) 100%);
     border-radius: var(--border-radius-lg);
     box-shadow: var(--shadow-xl);
     overflow: hidden;
-    border: 1px solid var(--gray-200);
+    border: 2px solid var(--fesfut-blue);
 }
 
 /* Header del formulario */
 .form-header {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
-    color: white;
+    background: linear-gradient(135deg, var(--fesfut-blue) 0%, var(--primary-hover) 100%);
+    color: var(--fesfut-white);
     padding: 2rem;
     text-align: center;
     position: relative;
     overflow: hidden;
+    border-bottom: 3px solid var(--fesfut-white);
 }
 
 .form-header::before {
@@ -107,14 +114,16 @@
 .section-icon {
     width: 2.5rem;
     height: 2.5rem;
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+    background: linear-gradient(135deg, var(--fesfut-blue), var(--fesfut-light-blue));
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     margin-right: 1rem;
-    color: white;
+    color: var(--fesfut-white);
     font-size: 1.1rem;
+    border: 2px solid var(--fesfut-white);
+    box-shadow: var(--shadow);
 }
 
 .section-title {
@@ -168,8 +177,8 @@
 
 .form-input:focus, .form-select:focus, .form-textarea:focus {
     outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    border-color: var(--fesfut-blue);
+    box-shadow: 0 0 0 3px rgba(0, 63, 127, 0.1);
     transform: translateY(-1px);
 }
 
@@ -264,8 +273,8 @@
 
 .map-btn:hover {
     background: var(--primary-light);
-    border-color: var(--primary-color);
-    color: var(--primary-color);
+    border-color: var(--fesfut-blue);
+    color: var(--fesfut-blue);
     transform: translateY(-1px);
     box-shadow: var(--shadow);
 }

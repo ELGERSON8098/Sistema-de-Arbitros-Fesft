@@ -7,7 +7,8 @@
         <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
             @can('create', App\Models\Arbitro::class)
                 <a href="{{ route('arbitros.create') }}" 
-                   class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto">
+                   class="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-800 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-700 focus:ring-offset-2 sm:w-auto">
+                    <i class="fas fa-user-plus mr-2"></i>
                     Nuevo Árbitro
                 </a>
             @endcan
@@ -24,7 +25,7 @@
                        wire:model.live="search" 
                        id="search"
                        placeholder="Nombre, apellido o email..."
-                       class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                       class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-800 focus:ring-blue-800 sm:text-sm">
             </div>
 
             <!-- Filtro por categoría -->
@@ -32,7 +33,7 @@
                 <label for="categoria" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Categoría</label>
                 <select wire:model.live="categoriaFilter" 
                         id="categoria"
-                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-800 focus:ring-blue-800 sm:text-sm">
                     <option value="">Todas las categorías</option>
                     @foreach($categorias as $categoria)
                         <option value="{{ $categoria }}">{{ $categoria }}</option>
@@ -45,7 +46,7 @@
                 <label for="estado" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Estado</label>
                 <select wire:model.live="estadoFilter" 
                         id="estado"
-                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-800 focus:ring-blue-800 sm:text-sm">
                     <option value="">Todos los estados</option>
                     @foreach($estados as $estado)
                         <option value="{{ $estado }}">{{ ucfirst($estado) }}</option>
@@ -58,7 +59,7 @@
                 <label for="ubicacion" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Ubicación</label>
                 <select wire:model.live="ubicacionFilter" 
                         id="ubicacion"
-                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-800 focus:ring-blue-800 sm:text-sm">
                     <option value="">Todas las ubicaciones</option>
                     @foreach($ubicaciones as $ubicacion)
                         <option value="{{ $ubicacion }}">{{ $ubicacion }}</option>
@@ -190,7 +191,7 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <div class="flex space-x-2">
                                             <a href="{{ route('arbitros.show', $arbitro) }}" 
-                                               class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
+                                               class="text-blue-800 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
                                                 Ver
                                             </a>
                                             @can('update', $arbitro)

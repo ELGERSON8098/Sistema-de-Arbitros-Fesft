@@ -16,6 +16,8 @@ class EquiposForm extends Component
     public $division;
     public $sede;
     public $ubicacion;
+    public $latitud;
+    public $longitud;
     public $logo;
     public $currentLogo;
 
@@ -24,6 +26,8 @@ class EquiposForm extends Component
         'division' => 'required|string|in:Primera,Segunda,Tercera',
         'sede' => 'required|string|max:255',
         'ubicacion' => 'required|string|max:255',
+        'latitud' => 'nullable|numeric|between:-90,90',
+        'longitud' => 'nullable|numeric|between:-180,180',
         'logo' => 'nullable|image|max:1024', // 1MB Max
     ];
 
@@ -35,6 +39,8 @@ class EquiposForm extends Component
             $this->division = $equipo->division;
             $this->sede = $equipo->sede;
             $this->ubicacion = $equipo->ubicacion;
+            $this->latitud = $equipo->latitud;
+            $this->longitud = $equipo->longitud;
             $this->currentLogo = $equipo->logo;
         }
     }
@@ -50,6 +56,8 @@ class EquiposForm extends Component
                 'division' => $this->division,
                 'sede' => $this->sede,
                 'ubicacion' => $this->ubicacion,
+                'latitud' => $this->latitud,
+                'longitud' => $this->longitud,
             ]);
 
             if ($this->logo) {
@@ -67,6 +75,8 @@ class EquiposForm extends Component
                 'division' => $this->division,
                 'sede' => $this->sede,
                 'ubicacion' => $this->ubicacion,
+                'latitud' => $this->latitud,
+                'longitud' => $this->longitud,
             ]);
 
             if ($this->logo) {
@@ -78,6 +88,13 @@ class EquiposForm extends Component
         }
 
         return redirect()->route('equipos.index');
+    }
+
+    public function updateLocation($latitud, $longitud, $direccion)
+    {
+        $this->latitud = $latitud;
+        $this->longitud = $longitud;
+        $this->ubicacion = $direccion;
     }
 
     public function render()

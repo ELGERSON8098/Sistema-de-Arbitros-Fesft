@@ -201,8 +201,7 @@
                                                 </a>
                                             @endcan
                                             @can('delete', $arbitro)
-                                                <button wire:click="deleteArbitro({{ $arbitro->id }})" 
-                                                        onclick="return confirm('¿Estás seguro de que quieres eliminar este árbitro?')"
+                                                <button wire:click="confirmDelete({{ $arbitro->id }})" 
                                                         class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
                                                     Eliminar
                                                 </button>
@@ -228,4 +227,41 @@
     <div class="mt-6">
         {{ $arbitros->links() }}
     </div>
+
+    <!-- Modal de confirmación de eliminación -->
+    @if($showDeleteModal)
+        <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" id="delete-modal">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+                <div class="mt-3 text-center">
+                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900">
+                        <svg class="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mt-4">Confirmar eliminación</h3>
+                    <div class="mt-2 px-7 py-3">
+                        <p class="text-sm text-gray-500 dark:text-gray-300">
+                            ¿Estás seguro de que quieres eliminar al árbitro 
+                            <strong class="text-gray-900 dark:text-white">{{ $arbitroToDelete?->nombre_completo }}</strong>?
+                        </p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mt-2">
+                            Esta acción no se puede deshacer.
+                        </p>
+                    </div>
+                    <div class="items-center px-4 py-3">
+                        <div class="flex space-x-3 justify-center">
+                            <button wire:click="cancelDelete" 
+                                    class="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                                Cancelar
+                            </button>
+                            <button wire:click="deleteArbitro" 
+                                    class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
+                                Eliminar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>

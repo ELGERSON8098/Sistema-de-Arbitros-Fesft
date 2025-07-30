@@ -18,6 +18,10 @@ class ArbitrosList extends Component
     public $sortField = "nombre";
     public $sortDirection = "asc";
     public $perPage = 10;
+    
+    // Variables para el modal de confirmación
+    public $showDeleteModal = false;
+    public $arbitroToDelete = null;
 
     protected $queryString = [
         "search" => ["except" => ""],
@@ -63,14 +67,30 @@ class ArbitrosList extends Component
         $this->sortField = $field;
     }
 
-    public function deleteArbitro($arbitroId)
+    public function confirmDelete($arbitroId)
     {
         $arbitro = Arbitro::findOrFail($arbitroId);
         $this->authorize("delete", $arbitro);
         
-        $arbitro->delete();
-        
-        session()->flash("message", "Árbitro eliminado exitosamente.");
+        $this->arbitroToDelete = $arbitro;
+        $this->showDeleteModal = true;
+    }
+    
+    public function deleteArbitro()
+    {
+        if ($this->arbitroToDelete) {
+            $this->arbitroToDelete->delete();
+            session()->flash("message", "Árbitro eliminado exitosamente.");
+            
+            $this->showDeleteModal = false;
+            $this->arbitroToDelete = null;
+        }
+    }
+    
+    public function cancelDelete()
+    {
+        $this->showDeleteModal = false;
+        $this->arbitroToDelete = null;
     }
 
     public function toggleEstado($arbitroId)

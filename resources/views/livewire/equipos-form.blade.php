@@ -356,25 +356,13 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Inicializar el mapa
-        let map = L.map('map', {
-            center: [defaultLat, defaultLng],
-            zoom: {{ $latitud && $longitud ? '15' : '8' }},
-            zoomControl: true,
-            scrollWheelZoom: true,
-            doubleClickZoom: true,
-            boxZoom: true,
-            keyboard: true,
-            dragging: true,
-            touchZoom: true
-        });
+        // Inicializar el mapa con configuración básica
+        let map = L.map('map').setView([defaultLat, defaultLng], {{ $latitud && $longitud ? '15' : '8' }});
         
-        // Agregar capa de OpenStreetMap con mejor configuración
+        // Agregar capa de OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            maxZoom: 19,
-            tileSize: 256,
-            zoomOffset: 0
+            maxZoom: 18
         }).addTo(map);
         
         // Marcador para la ubicación seleccionada
@@ -412,51 +400,48 @@ document.addEventListener('DOMContentLoaded', function() {
                 map.removeLayer(marker);
             }
             
-            // Agregar nuevo marcador con icono personalizado
-            marker = L.marker([lat, lng], {
-                icon: L.icon({
-                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
-                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                    iconSize: [25, 41],
-                    iconAnchor: [12, 41],
-                    popupAnchor: [1, -34],
-                    shadowSize: [41, 41]
-                })
-            }).addTo(map);
+            // Agregar nuevo marcador (usando el marcador por defecto de Leaflet)
+            marker = L.marker([lat, lng]).addTo(map);
             
-            // Mostrar indicador de carga
-            marker.bindPopup('<div class="text-center"><svg class="animate-spin h-4 w-4 mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><br>Obteniendo dirección...</div>').openPopup();
+            // Mostrar indicador de carga en el popup
+            marker.bindPopup('<div style="text-align: center; padding: 10px;"><strong>🔄 Obteniendo dirección...</strong></div>').openPopup();
             
             try {
                 // Obtener la dirección
                 const address = await getAddressFromCoordinates(lat, lng);
                 
-                // Actualizar los campos del formulario
+                // Actualizar los campos del formulario sin usar Livewire directamente
                 document.getElementById('latitud').value = lat;
                 document.getElementById('longitud').value = lng;
                 document.getElementById('ubicacion').value = address;
                 
-                // Disparar eventos de Livewire para actualizar el componente
-                @this.set('latitud', lat);
-                @this.set('longitud', lng);
-                @this.set('ubicacion', address);
+                // Disparar eventos de input para que Livewire detecte los cambios
+                document.getElementById('latitud').dispatchEvent(new Event('input'));
+                document.getElementById('longitud').dispatchEvent(new Event('input'));
+                document.getElementById('ubicacion').dispatchEvent(new Event('input'));
                 
                 // Actualizar popup con la información
                 marker.bindPopup(`
-                    <div class="text-center">
-                        <strong class="text-green-600">✓ Ubicación seleccionada</strong><br>
-                        <small class="text-gray-600">${address}</small><br>
-                        <small class="text-gray-500">Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}</small>
+                    <div style="text-align: center; padding: 10px; min-width: 200px;">
+                        <strong style="color: #059669;">✓ Ubicación seleccionada</strong><br><br>
+                        <div style="color: #374151; font-size: 12px; margin: 5px 0;">${address}</div>
+                        <div style="color: #6B7280; font-size: 11px;">
+                            Lat: ${lat.toFixed(6)}<br>
+                            Lng: ${lng.toFixed(6)}
+                        </div>
                     </div>
                 `).openPopup();
                 
             } catch (error) {
                 console.error('Error:', error);
                 marker.bindPopup(`
-                    <div class="text-center">
-                        <strong class="text-red-600">Error</strong><br>
-                        <small>No se pudo obtener la dirección</small><br>
-                        <small>Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}</small>
+                    <div style="text-align: center; padding: 10px;">
+                        <strong style="color: #DC2626;">❌ Error</strong><br><br>
+                        <div style="color: #6B7280; font-size: 12px;">No se pudo obtener la dirección</div>
+                        <div style="color: #6B7280; font-size: 11px;">
+                            Lat: ${lat.toFixed(6)}<br>
+                            Lng: ${lng.toFixed(6)}
+                        </div>
                     </div>
                 `).openPopup();
             }
@@ -493,12 +478,35 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Centrar el mapa en la ubicación encontrada
                     map.setView([lat, lng], 15);
                     
-                    // Simular clic en esa ubicación
-                    map.fire('click', {
-                        latlng: L.latLng(lat, lng),
-                        layerPoint: map.latLngToLayerPoint(L.latLng(lat, lng)),
-                        containerPoint: map.latLngToContainerPoint(L.latLng(lat, lng))
-                    });
+                    // Remover marcador anterior si existe
+                    if (marker) {
+                        map.removeLayer(marker);
+                    }
+                    
+                    // Agregar marcador directamente
+                    marker = L.marker([lat, lng]).addTo(map);
+                    
+                    // Actualizar campos del formulario
+                    document.getElementById('latitud').value = lat;
+                    document.getElementById('longitud').value = lng;
+                    document.getElementById('ubicacion').value = result.display_name;
+                    
+                    // Disparar eventos de input para Livewire
+                    document.getElementById('latitud').dispatchEvent(new Event('input'));
+                    document.getElementById('longitud').dispatchEvent(new Event('input'));
+                    document.getElementById('ubicacion').dispatchEvent(new Event('input'));
+                    
+                    // Mostrar popup con información
+                    marker.bindPopup(`
+                        <div style="text-align: center; padding: 10px; min-width: 200px;">
+                            <strong style="color: #059669;">✓ Ubicación encontrada</strong><br><br>
+                            <div style="color: #374151; font-size: 12px; margin: 5px 0;">${result.display_name}</div>
+                            <div style="color: #6B7280; font-size: 11px;">
+                                Lat: ${lat.toFixed(6)}<br>
+                                Lng: ${lng.toFixed(6)}
+                            </div>
+                        </div>
+                    `).openPopup();
                 } else {
                     alert('No se encontró la ubicación. Intenta con un término de búsqueda diferente como "Estadio Cuscatlán" o "San Salvador".');
                 }
@@ -519,12 +527,50 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Forzar redimensionamiento del mapa después de un breve delay
-        setTimeout(function() {
-            map.invalidateSize();
-        }, 500);
+        // Función para redimensionar el mapa
+        function resizeMap() {
+            setTimeout(function() {
+                map.invalidateSize();
+            }, 100);
+        }
         
-    }, 100); // Delay de 100ms para asegurar que el DOM esté completamente cargado
+        // Redimensionar el mapa cuando sea necesario
+        window.addEventListener('resize', resizeMap);
+        
+        // Redimensionar después de la inicialización
+        setTimeout(resizeMap, 500);
+        
+        // Exponer la función de redimensionamiento globalmente
+        window.resizeMap = resizeMap;
+        
+    }, 200); // Delay de 200ms para asegurar que el DOM esté completamente cargado
+});
+
+// Escuchar eventos de Livewire para redimensionar el mapa
+document.addEventListener('livewire:updated', function () {
+    if (window.resizeMap) {
+        setTimeout(window.resizeMap, 100);
+    }
+});
+
+// También escuchar cuando el DOM se actualiza
+document.addEventListener('DOMContentLoaded', function() {
+    // Observar cambios en el contenedor del mapa
+    const mapContainer = document.getElementById('map');
+    if (mapContainer) {
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'attributes' && window.resizeMap) {
+                    setTimeout(window.resizeMap, 50);
+                }
+            });
+        });
+        
+        observer.observe(mapContainer, {
+            attributes: true,
+            attributeFilter: ['style', 'class']
+        });
+    }
 });
 </script>
 @endpush

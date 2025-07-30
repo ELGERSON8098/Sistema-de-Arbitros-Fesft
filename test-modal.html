@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Modal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        #modal-overlay {
+            background: rgba(17, 24, 39, 0.6);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        #modal-overlay.opacity-0 {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #modal-overlay.opacity-100 {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #modal-content {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    <h1 class="text-2xl font-bold mb-4">Test del Modal</h1>
+    <button onclick="abrirModal()" class="bg-red-600 text-white px-4 py-2 rounded">
+        Abrir Modal de Prueba
+    </button>
+
+    <!-- Modal -->
+    <div id="modal-eliminar" class="fixed inset-0 z-50 overflow-y-auto hidden">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm transition-all duration-300 opacity-0" id="modal-overlay"></div>
+            
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            
+            <div id="modal-content" class="relative inline-block align-bottom bg-white rounded-2xl px-4 pt-5 pb-4 text-left overflow-hidden shadow-2xl transform transition-all duration-300 sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-8 scale-95 opacity-0">
+                <div class="text-center">
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">Modal de Prueba</h3>
+                    <p class="text-gray-600 mb-6">Este es un modal de prueba para verificar que el overlay funciona correctamente.</p>
+                    <button onclick="cerrarModal()" class="bg-gray-600 text-white px-4 py-2 rounded">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function abrirModal() {
+            const modal = document.getElementById('modal-eliminar');
+            const modalContent = document.getElementById('modal-content');
+            const overlay = document.getElementById('modal-overlay');
+            
+            modal.classList.remove('hidden');
+            
+            setTimeout(() => {
+                overlay.classList.remove('opacity-0');
+                overlay.classList.add('opacity-100');
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function cerrarModal() {
+            const modal = document.getElementById('modal-eliminar');
+            const modalContent = document.getElementById('modal-content');
+            const overlay = document.getElementById('modal-overlay');
+            
+            overlay.classList.remove('opacity-100');
+            overlay.classList.add('opacity-0');
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+    </script>
+</body>
+</html>
